@@ -46,4 +46,14 @@ export class UrlService {
 
     return shortUrlId;
   }
+
+  async getUrlForRedirect(shortUrlId: string): Promise<string> {
+    const url = await this.prismaService.url.findUniqueOrThrow({
+      where: {
+        shortUrlId,
+      },
+    });
+
+    return url.originalUrl;
+  }
 }

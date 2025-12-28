@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Redirect,
+} from '@nestjs/common';
 import { UrlService } from './url.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { OriginalUrl } from './dto/long-utl.dto';
@@ -11,5 +20,13 @@ export class UrlController {
   @Post()
   async reduceUrl(@Body() dto: OriginalUrl): Promise<string> {
     return await this.urlService.reduceUrl(dto.originalUrl);
+  }
+
+  @ApiOperation({ summary: 'Redirect from reduced url to original url.' })
+  @Redirect('undefined', 301)
+  @Get(':shortUrlId')
+  async redirectByShortUrl(@Param('shortUrlId') shortUrlId: string) {
+    const originalUrl = await this.urlService.getUrlForRedirect(shortUrlId);
+    return { url: originalUrl };
   }
 }
