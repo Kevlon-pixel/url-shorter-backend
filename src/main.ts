@@ -12,14 +12,13 @@ async function bootstrap() {
     .setTitle('URL')
     .setDescription('URL description')
     .setVersion('1.0')
-    .addTag('url')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
   const PORT = process.env.PORT ?? 3000;
   await app.listen(PORT, () => {
-    logger.log(`Docs for local server started at http://localhost:${PORT}/api`);
+    logger.log(`Docs started at address: http://localhost:${PORT}/api`);
   });
 }
 bootstrap();

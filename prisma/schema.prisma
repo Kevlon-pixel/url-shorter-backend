@@ -10,8 +10,8 @@ datasource db {
 model Url {
   id String @id @default(uuid())
 
-  longUrl  String
-  shortUrl String
+  originalUrl String @unique
+  shortUrlId  String @unique
 
   createdAt DateTime @default(now())
 }
