@@ -1,42 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'prisma/prisma.service';
-import { symbols, symblosLenght } from './data/symbols-array';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UrlService {
-  private MUL_CONST: number;
+  private SERVER_URL: string;
 
   constructor(
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    this.MUL_CONST = configService.getOrThrow<number>('MUL_CONST');
+    this.SERVER_URL = configService.getOrThrow<string>('SERVER_URL');
   }
 
   async reduceUrl(originalUrl: string): Promise<string> {
-    const url = await this.prismaService.url.findUnique({
+    const existing = await this.prismaService.url.findUnique({
       where: {
         originalUrl,
       },
     });
-    if (url) {
-      return url.shortUrlId;
+    if (existing) {
+      return this.SERVER_URL + existing.shortUrlId;
     }
 
-    let number = 0;
-    for (let i = 0; i < originalUrl.length; i++) {
-      number += originalUrl.charCodeAt(i) * this.MUL_CONST;
-    }
-
-    let shortUrlId: string = '';
-    while (number) {
-      const z = number % symblosLenght;
-
-      shortUrlId += symbols[z];
-      number = (number - z) / symblosLenght;
-    }
-
+    let shortUrlId = await this.generateShortUrlId();
     await this.prismaService.url.create({
       data: {
         originalUrl,
@@ -44,7 +32,7 @@ export class UrlService {
       },
     });
 
-    return shortUrlId;
+    return this.SERVER_URL + shortUrlId;
   }
 
   async getUrlForRedirect(shortUrlId: string): Promise<string> {
@@ -55,5 +43,20 @@ export class UrlService {
     });
 
     return url.originalUrl;
+  }
+
+  private async generateShortUrlId(): Promise<string> {
+    for (let i = 0; i < 10; i++) {
+      const shortUrlId = crypto.randomBytes(3).toString('hex');
+      const existing = await this.prismaService.url.findUnique({
+        where: {
+          shortUrlId,
+        },
+      });
+      if (!existing) {
+        return shortUrlId;
+      }
+    }
+    throw new InternalServerErrorException('Cannot generate unique shortUrlId');
   }
 }
