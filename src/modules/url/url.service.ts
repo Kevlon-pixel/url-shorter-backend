@@ -14,14 +14,14 @@ export class UrlService {
     this.SERVER_URL = configService.getOrThrow<string>('SERVER_URL');
   }
 
-  async reduceUrl(originalUrl: string): Promise<string> {
+  async reduceUrl(originalUrl: string): Promise<{ url: string }> {
     const existing = await this.prismaService.url.findUnique({
       where: {
         originalUrl,
       },
     });
     if (existing) {
-      return this.SERVER_URL + existing.shortUrlId;
+      return { url: this.SERVER_URL + '/' + existing.shortUrlId };
     }
 
     let shortUrlId = await this.generateShortUrlId();
@@ -32,7 +32,7 @@ export class UrlService {
       },
     });
 
-    return this.SERVER_URL + shortUrlId;
+    return { url: this.SERVER_URL + '/' + shortUrlId };
   }
 
   async getUrlForRedirect(shortUrlId: string): Promise<string> {
