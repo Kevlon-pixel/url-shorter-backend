@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-
 import { PrismaModule } from 'prisma/prisma.module';
 import { UrlModule } from './modules/url/url.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
 
 @Module({
   imports: [
@@ -10,6 +10,21 @@ import { ConfigModule } from '@nestjs/config';
     UrlModule,
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    RedisModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const HOST = configService.getOrThrow<string>('REDIS_HOST');
+        const PORT = configService.getOrThrow<string>('REDIS_PORT');
+
+        const options: RedisModuleOptions = {
+          type: 'single',
+          url: `redis://${HOST}:${PORT}`,
+        };
+
+        return options;
+      },
+      inject: [ConfigService],
     }),
   ],
 })

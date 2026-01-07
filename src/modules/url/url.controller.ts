@@ -22,4 +22,12 @@ export class UrlController {
     const originalUrl = await this.urlService.getUrlForRedirect(shortUrlId);
     return { url: originalUrl };
   }
+
+  @ApiOperation({ summary: 'Get last 10 reduced urls' })
+  @Get('stats/last')
+  async getLastRequests(): Promise<
+    { originalUrl: string; shortUrl: string }[]
+  > {
+    return await this.urlService.getLastRequests();
+  }
 }

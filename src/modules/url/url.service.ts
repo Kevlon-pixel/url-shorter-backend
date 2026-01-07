@@ -1,13 +1,20 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'prisma/prisma.service';
 import * as crypto from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
 
 @Injectable()
 export class UrlService {
   private SERVER_URL: string;
 
   constructor(
+    @InjectRedis() private readonly redisClient: Redis,
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService,
   ) {
@@ -32,17 +39,40 @@ export class UrlService {
       },
     });
 
-    return { url: this.SERVER_URL + '/' + shortUrlId };
+    const shortUrl = this.SERVER_URL + '/' + shortUrlId;
+
+    this.redisClient.zadd(
+      'last_url',
+      Date.now(),
+      JSON.stringify({
+        originalUrl,
+        shortUrl,
+      }),
+    );
+
+    await this.redisClient.zremrangebyrank('last_url', 0, -11);
+
+    return { url: shortUrl };
   }
 
   async getUrlForRedirect(shortUrlId: string): Promise<string> {
-    const url = await this.prismaService.url.findUniqueOrThrow({
-      where: {
-        shortUrlId,
-      },
-    });
+    try {
+      const url = await this.prismaService.url.findUniqueOrThrow({
+        where: {
+          shortUrlId,
+        },
+      });
+      return url.originalUrl;
+    } catch (err) {
+      throw new NotFoundException('Ссылка не была найдена');
+    }
+  }
 
-    return url.originalUrl;
+  async getLastRequests(): Promise<
+    { originalUrl: string; shortUrl: string }[]
+  > {
+    const logs = await this.redisClient.zrevrange('last_url', 0, 10);
+    return logs.map((entry) => JSON.parse(entry));
   }
 
   private async generateShortUrlId(): Promise<string> {
