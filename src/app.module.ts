@@ -3,6 +3,7 @@ import { PrismaModule } from 'prisma/prisma.module';
 import { UrlModule } from './modules/url/url.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -27,5 +28,6 @@ import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
       inject: [ConfigService],
     }),
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
