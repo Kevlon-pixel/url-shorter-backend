@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cors from 'cors';
-import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,8 +21,10 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, documentFactory);
 
   const PORT = process.env.PORT ?? 3000;
-  await app.listen(PORT, () => {
-    logger.log(`Docs started at address: http://localhost:${PORT}/api`);
-  });
+  await app.listen(PORT);
+
+  const NODE_ENV = process.env.NODE_ENV || 'development';
+  logger.log(`Application running in ${NODE_ENV} mode`);
+  if (NODE_ENV === "development") logger.log(`Docs started at address: http://localhost:${PORT}/api`);
 }
 bootstrap();

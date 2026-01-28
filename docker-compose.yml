@@ -1,17 +1,13 @@
 version: '3.8'
-
 services:
   api:
     build: .
+    restart: always
+    env_file: .env
     ports:
       - '4000:4000'
-    environment:
-      - DATABASE_URL=postgresql://postgres:1234@db:5432/database?schema=public
-      - SERVER_URL=${SERVER_URL}
-      - CLIENT_URL=${CLIENT_URL}
-      - PORT=${PORT}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+    networks:
+      - web-network
     depends_on:
       - db
       - cache
@@ -22,21 +18,21 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: db
-    ports:
-      - '5432:5432'
+      POSTGRES_DB: database
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - web-network
 
   cache:
     image: redis:7.4-alpine
     restart: always
-    ports:
-      - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning
-    volumes:
-      - cache:/data
+    networks:
+      - web-network
+
+networks:
+  web-network:
+    external: true
 
 volumes:
   db_data:
-  cache:
